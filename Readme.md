@@ -32,6 +32,7 @@ day();             // the day now (1-31)
 weekday();         // day of the week (1-7), Sunday is day 1
 month();           // the month now (1-12)
 year();            // the full four digit year: (2009, 2010 etc)
+dst();             // true, if now is DST
 ```
 
 there are also functions to return the hour in 12-hour format
@@ -58,6 +59,7 @@ day(t);           // the day for the given time t
 weekday(t);       // day of the week for the given time t
 month(t);         // the month for the given time t
 year(t);          // the year for the given time t
+dst(t);           // true, if t within daylight saving time
 ```
 
 Functions for managing the timer services are:
@@ -80,6 +82,7 @@ the returned time may have drifted if the status is `timeNeedsSync`.
 ```c
 setSyncProvider(getTimeFunction);  // set the external time provider
 setSyncInterval(interval);         // set the number of seconds between re-sync
+setDSTProvider(DST_zone);          // set zone DST is calculated for (currently Europe only)
 ```
 
 There are many convenience macros in the `time.h` file for time constants and conversion
@@ -162,4 +165,9 @@ makeTime(&tm);         // return time_t from elements stored in tm struct
 This [DS1307RTC library][1] provides an example of how a time provider
 can use the low-level functions to interface with the Time library.
 
+### Daylight saving time extension
+The libary was extended to provide a basic daylight saving time information service. Calculations are basic, as they are static and not based on the _zoneinfo database_. If -for whatever reason- the way changes how DST is being calculated for a specific zone and time, the provider function(s) have to be adapted.
+Currently only european DST is supported, the complex calculation code was taken from [SensorIOT][2] (Andreas Spiess, the guy with the swiss accent). 
+
 [1]:<https://github.com/PaulStoffregen/DS1307RTC>
+[2]:<https://github.com/SensorsIot/NTPtimeESP>

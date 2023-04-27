@@ -38,6 +38,7 @@
 static tmElements_t tm;          // a cache of time elements
 static time_t cacheTime;   // the time the cache was updated
 static uint32_t syncInterval = 300;  // time sync will be attempted after this many seconds
+static getDST DST = DST_false;       // pointer to the DST calculating function
 
 void refreshCache(time_t t) {
   if (t != cacheTime) {
@@ -139,6 +140,15 @@ int year(time_t t) { // the year for the given time
   return tmYearToCalendar(tm.Year);
 }
 
+boolean dst() {
+  return dst(now());
+}
+
+boolean dst(time_t t) {
+  refreshCache(t);
+  return tm.dst;
+}
+
 /*============================================================================*/	
 /* functions to convert to and from system time */
 /* These are for interfacing with time services and are not normally needed in a sketch */
@@ -199,6 +209,7 @@ void breakTime(time_t timeInput, tmElements_t &tm){
   }
   tm.Month = month + 1;  // jan is month 1  
   tm.Day = time + 1;     // day of month
+  tm.dst = DST(tm);      // true, if DST applies
 }
 
 time_t makeTime(const tmElements_t &tm){   
@@ -261,6 +272,7 @@ time_t now() {
     if (getTimePtr != 0) {
       time_t t = getTimePtr();
       if (t != 0) {
+        refreshCache(t);
         setTime(t);
       } else {
         nextSyncTime = sysTime + syncInterval;
@@ -276,9 +288,9 @@ void setTime(time_t t) {
  if(sysUnsyncedTime == 0) 
    sysUnsyncedTime = t;   // store the time of the first call to set a valid Time   
 #endif
-
-  sysTime = (uint32_t)t;  
-  nextSyncTime = (uint32_t)t + syncInterval;
+  uint32_t dst_offset = tm.dst == true ? (uint32_t)SECS_PER_HOUR : 0;
+  sysTime = (uint32_t)t + dst_offset;  
+  nextSyncTime = (uint32_t)t + + dst_offset + syncInterval;
   Status = timeSet;
   prevMillis = millis();  // restart counting from now (thanks to Korman for this fix)
 } 
@@ -319,3 +331,37 @@ void setSyncInterval(time_t interval){ // set the number of seconds between re-s
   syncInterval = (uint32_t)interval;
   nextSyncTime = sysTime + syncInterval;
 }
+/**
+ * @brief set provider function for DST calculations
+ * @param const char* DST_zone
+ * @return void
+*/
+void setDSTProvider(DST_t DST_zone) {
+  
+  switch (DST_zone)
+  {
+  case CET:   DST = DST_europe;break;
+  default:    DST = DST_false;break;
+  }
+
+}
+/**
+ * @brief DST math for Central Europe - thanks to Andreas Spiess / SensorIOT
+ * @param tmElements_t &tm time element struct 
+ * @return true, if date within DST period
+*/
+boolean DST_europe(tmElements_t &tm) {
+  boolean retval = false;
+
+  if (tm.Month < 3 || tm.Month > 10) retval = false;    // no DST for JAN,FEB,NOV and DEC
+  if (tm.Month > 3 && tm.Month < 10) retval = true;     // DST for APR, MAY, JUN, JUL, AUG, SEP
+  if ((tm.Month == 3 && ((tm.Hour + 24 * tm.Day) >= (1 +  24 * (31 - (5 * tmYearToCalendar(tm.Year) / 4 + 4) % 7)))) || ((tm.Month == 10) && (tm.Hour + 24 * tm.Day) < (1 +  24 * (31 - (5 * tmYearToCalendar(tm.Year) / 4 + 1) % 7)))) retval = true;
+ 
+  return retval;
+}
+/**
+ * @brief "DST-math" for standard time
+ * @param tmElements_t &tm time element struct
+ * @return false
+*/
+boolean DST_false(tmElements_t &tm) {return false;}

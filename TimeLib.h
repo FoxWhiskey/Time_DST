@@ -40,7 +40,11 @@ typedef enum {
 
 typedef enum {
     tmSecond, tmMinute, tmHour, tmWday, tmDay,tmMonth, tmYear, tmNbrFields
-} tmByteFields;	   
+} tmByteFields;
+
+typedef enum {
+    CET,US
+} DST_t;
 
 typedef struct  { 
   uint8_t Second; 
@@ -49,7 +53,8 @@ typedef struct  {
   uint8_t Wday;   // day of week, sunday is day 1
   uint8_t Day;
   uint8_t Month; 
-  uint8_t Year;   // offset from 1970; 
+  uint8_t Year;   // offset from 1970;
+  boolean dst; 
 } 	tmElements_t, TimeElements, *tmElementsPtr_t;
 
 //convenience macros to convert to and from tm years 
@@ -60,7 +65,7 @@ typedef struct  {
 
 typedef time_t(*getExternalTime)();
 //typedef void  (*setExternalTime)(const time_t); // not used in this version
-
+typedef boolean(*getDST)(tmElements_t&);      // pointer to a generic DST-function
 
 /*==============================================================================*/
 /* Useful Constants */
@@ -116,6 +121,8 @@ int     month();           // the month now  (Jan is month 1)
 int     month(time_t t);   // the month for the given time
 int     year();            // the full four digit year: (2009, 2010 etc) 
 int     year(time_t t);    // the year for the given time
+boolean dst();             // returns true if now is DST
+boolean dst(time_t t);     // returns true if given time is DST
 
 time_t now();              // return the current time as seconds since Jan 1 1970 
 void    setTime(time_t t);
@@ -133,10 +140,14 @@ char* dayShortStr(uint8_t day);
 timeStatus_t timeStatus(); // indicates if time has been set and recently synchronized
 void    setSyncProvider( getExternalTime getTimeFunction); // identify the external time provider
 void    setSyncInterval(time_t interval); // set the number of seconds between re-sync
+void    setDSTProvider(DST_t DST_zone); // set zone DST is calculated for (currently Europe only)
 
 /* low level functions to convert to and from system time                     */
 void breakTime(time_t time, tmElements_t &tm);  // break time_t into elements
 time_t makeTime(const tmElements_t &tm);  // convert time elements into time_t
+
+boolean DST_europe(tmElements_t &tm);  //DST-calculations for Central Europe
+boolean DST_false(tmElements_t &tm);   //no DST-calculations
 
 } // extern "C++"
 #endif // __cplusplus
