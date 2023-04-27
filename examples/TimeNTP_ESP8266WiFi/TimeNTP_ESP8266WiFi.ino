@@ -57,6 +57,7 @@ void setup()
   Serial.println(Udp.localPort());
   Serial.println("waiting for sync");
   setSyncProvider(getNtpTime);
+  setDSTProvider(CET);
   setSyncInterval(300);
 }
 
@@ -84,6 +85,7 @@ void digitalClockDisplay()
   Serial.print(month());
   Serial.print(".");
   Serial.print(year());
+  Serial.print(dst() == true ? " DST" : "");
   Serial.println();
 }
 
