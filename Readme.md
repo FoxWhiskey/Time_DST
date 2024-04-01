@@ -83,6 +83,7 @@ the returned time may have drifted if the status is `timeNeedsSync`.
 setSyncProvider(getTimeFunction);  // set the external time provider
 setSyncInterval(interval);         // set the number of seconds between re-sync
 setDSTProvider(DST_zone);          // set zone DST is calculated for (currently Europe only)
+setTimeZone(TimeZone);             // set the time zone (int8) of library - offset in hours
 ```
 
 There are many convenience macros in the `time.h` file for time constants and conversion
@@ -147,6 +148,7 @@ The internal time can be automatically synchronized at regular intervals to an e
 This is enabled by calling the `setSyncProvider(provider)` function - the provider argument is
 the address of a function that returns the current time as a `time_t`.
 See the sketches in the examples directory for usage.
+Internal time can also be synchronized to a `FakeTime` provider, which works without the need of external time sources. It was mainly used to check the behaviour of the library at certain dates and times. Helpful for debugging purposes.
 
 The default interval for re-syncing the time is 5 minutes but can be changed by calling the
 `setSyncInterval(interval)` method to set the number of seconds between re-sync attempts.

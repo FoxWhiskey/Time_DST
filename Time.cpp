@@ -39,6 +39,7 @@ static tmElements_t tm;          // a cache of time elements
 static time_t cacheTime;   // the time the cache was updated
 static uint32_t syncInterval = 300;  // time sync will be attempted after this many seconds
 static getDST DST = DST_false;       // pointer to the DST calculating function
+static int8 timeZone = 0;       // Standard time zone is UTC
 
 void refreshCache(time_t t) {
   if (t != cacheTime) {
@@ -273,6 +274,7 @@ time_t now() {
       time_t t = getTimePtr();
       if (t != 0) {
         refreshCache(t);
+        
         setTime(t);
       } else {
         nextSyncTime = sysTime + syncInterval;
@@ -280,7 +282,15 @@ time_t now() {
       }
     }
   }  
-  return (time_t)sysTime;
+return (time_t)sysTime;
+}
+
+/**
+ * @brief returns current date in seconds past 1970/01/01 local time.
+ * @brief if DST applies, an offset of SECS_PER_HOUR is added.
+*/
+time_t nowdst() {
+  return (dst() == true) ? now() + (1+ timeZone) * SECS_PER_HOUR : now() + timeZone * SECS_PER_HOUR;
 }
 
 void setTime(time_t t) { 
@@ -288,9 +298,8 @@ void setTime(time_t t) {
  if(sysUnsyncedTime == 0) 
    sysUnsyncedTime = t;   // store the time of the first call to set a valid Time   
 #endif
-  uint32_t dst_offset = tm.dst == true ? (uint32_t)SECS_PER_HOUR : 0;
-  sysTime = (uint32_t)t + dst_offset;  
-  nextSyncTime = (uint32_t)t + + dst_offset + syncInterval;
+  sysTime = (uint32_t)t;  
+  nextSyncTime = (uint32_t)t + syncInterval;
   Status = timeSet;
   prevMillis = millis();  // restart counting from now (thanks to Korman for this fix)
 } 
@@ -365,3 +374,11 @@ boolean DST_europe(tmElements_t &tm) {
  * @return false
 */
 boolean DST_false(tmElements_t &tm) {return false;}
+
+/**
+ * @brief set the time zone
+ * @param int8 an integer defining the offset to UTC. CET equals 1
+*/
+void setTimeZone(int8 &tz) {
+  timeZone = tz;
+}
